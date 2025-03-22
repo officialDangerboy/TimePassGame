@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Maze Game - Cyberpunk</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; background: #080808; color: white; text-align: center;
+        }
+        h1 { font-size: 28px; text-shadow: 0 0 10px cyan, 0 0 20px cyan; }
+        
+        /* Timer UI */
+        .timer { 
+            font-size: 22px; margin: 15px; font-weight: bold; 
+            color: cyan; text-shadow: 0 0 10px cyan;
+            animation: glow 1s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 10px cyan; }
+            to { text-shadow: 0 0 20px cyan, 0 0 30px cyan; }
+        }
+
+        /* Canvas */
+        canvas { 
+            background: #000; border: 3px solid cyan; margin-bottom: 10px;
+            box-shadow: 0 0 10px cyan, 0 0 20px cyan;
+        }
+
+        /* Glowing Buttons */
+        .controls {
+            display: grid;
+            grid-template-columns: 70px 70px 70px;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        button {
+            width: 70px; height: 70px; font-size: 28px; font-weight: bold;
+            color: cyan; background: #111; border: 2px solid cyan;
+            border-radius: 15px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 10px cyan, 0 0 20px cyan;
+            transition: all 0.2s ease-in-out;
+        }
+
+        button:hover {
+            background: cyan; color: black;
+            box-shadow: 0 0 20px cyan, 0 0 30px cyan;
+            transform: scale(1.1);
+        }
+
+        button:active {
+            background: #00ffff; box-shadow: 0 0 30px cyan;
+        }
+
+        /* Positioning Buttons */
+        .up { grid-column: 2; grid-row: 1; }
+        .left { grid-column: 1; grid-row: 2; }
+        .right { grid-column: 3; grid-row: 2; }
+        .down { grid-column: 2; grid-row: 3; }
+
+        /* Reset Button */
+        .reset-container { margin-top: 30px; }
+        .reset-btn {
+            width: 160px; height: 50px; font-size: 20px;
+            background: crimson; color: white; border: none; border-radius: 10px;
+            font-weight: bold; transition: all 0.3s ease-in-out;
+            box-shadow: 0 0 10px crimson, 0 0 20px crimson;
+        }
+
+        .reset-btn:hover {
+            background: red;
+            box-shadow: 0 0 20px red, 0 0 30px red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Infinite Maze - Level <span id="levelDisplay">1</span></h1>
+    <p class="timer">⏳ Time Left: <span id="timer">60</span> sec</p>
+    <canvas id="mazeCanvas"></canvas>
+
+    <div class="controls">
+        <button class="up" onclick="movePlayer(0, -1)">🔼</button>
+        <button class="left" onclick="movePlayer(-1, 0)">◀️</button>
+        <button class="right" onclick="movePlayer(1, 0)">▶️</button>
+        <button class="down" onclick="movePlayer(0, 1)">🔽</button>
+    </div>
+
+    <div class="reset-container">
+        <button class="reset-btn" onclick="resetGame()">🔄 Reset Level</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("mazeCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const size = 15;
+        const cellSize = 30;
+        canvas.width = size * cellSize;
+        canvas.height = size * cellSize;
+
+        let player = { x: 1, y: 1 };
+        let goal = { x: size - 2, y: size - 2 };
+        let maze = [];
+        let level = 1;
+        let timeLeft = 60;
+        let timerInterval;
+
+        function generateMaze() {
+            maze = Array(size).fill().map(() => Array(size).fill(1));
+
+            function carve(x, y) {
+                maze[y][x] = 0;
+                let directions = [[0, -2], [2, 0], [0, 2], [-2, 0]];
+                directions.sort(() => Math.random() - 0.5);
+
+                for (let [dx, dy] of directions) {
+                    let nx = x + dx, ny = y + dy;
+                    if (ny > 0 && ny < size - 1 && nx > 0 && nx < size - 1 && maze[ny][nx] === 1) {
+                        maze[ny - dy / 2][nx - dx / 2] = 0;
+                        carve(nx, ny);
+                    }
+                }
+            }
+
+            carve(1, 1);
+            maze[1][1] = 0;
+            maze[size - 2][size - 2] = 0;
+        }
+
+        function drawMaze() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    ctx.fillStyle = maze[y][x] ? "rgba(255, 0, 0, 0.9)" : "black";
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = "red";
+                    ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                }
+            }
+
+            ctx.fillStyle = "cyan";
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = "cyan";
+            ctx.fillRect(player.x * cellSize, player.y * cellSize, cellSize, cellSize);
+
+            ctx.fillStyle = "lime";
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = "lime";
+            ctx.fillRect(goal.x * cellSize, goal.y * cellSize, cellSize, cellSize);
+        }
+
+        function isCollision(x, y) {
+            return maze[y]?.[x] === 1;
+        }
+
+        function movePlayer(dx, dy) {
+            let newX = player.x + dx;
+            let newY = player.y + dy;
+
+            if (newX > 0 && newX < size - 1 && newY > 0 && newY < size - 1 && !isCollision(newX, newY)) {
+                player.x = newX;
+                player.y = newY;
+            }
+
+            if (player.x === goal.x && player.y === goal.y) {
+                nextLevel();
+            }
+
+            drawMaze();
+        }
+
+        function nextLevel() {
+            clearInterval(timerInterval);
+            level++;
+            document.getElementById("levelDisplay").textContent = level;
+            generateMaze();
+            resetGame();
+        }
+
+        function resetGame() {
+            generateMaze();
+            player.x = 1;
+            player.y = 1;
+            goal.x = size - 2;
+            goal.y = size - 2;
+            timeLeft = 60;
+            document.getElementById("timer").textContent = timeLeft;
+            drawMaze();
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById("timer").textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    alert("⏳ Time's up! Try again.");
+                    resetGame();
+                }
+            }, 1000);
+        }
+
+        generateMaze();
+        resetGame();
+    </script>
+</body>
+</html>

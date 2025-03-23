@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Infinite Maze Game - Cyberpunk</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
@@ -10,11 +10,10 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             height: 100vh; background: #080808; color: white; text-align: center;
         }
-        h1 { font-size: 28px; text-shadow: 0 0 10px cyan, 0 0 20px cyan; }
+        h1 { font-size: 24px; text-shadow: 0 0 10px cyan, 0 0 20px cyan; }
         
-        /* Timer UI */
         .timer { 
-            font-size: 22px; margin: 15px; font-weight: bold; 
+            font-size: 20px; margin: 10px; font-weight: bold; 
             color: cyan; text-shadow: 0 0 10px cyan;
             animation: glow 1s infinite alternate;
         }
@@ -24,26 +23,37 @@
             to { text-shadow: 0 0 20px cyan, 0 0 30px cyan; }
         }
 
-        /* Canvas */
+        /* Responsive Canvas */
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100vw;
+            height: auto;
+            max-width: 450px;
+            max-height: 450px;
+        }
+
         canvas { 
-            background: #000; border: 3px solid cyan; margin-bottom: 10px;
+            width: 100%; height: auto;
+            background: #000; border: 3px solid cyan;
             box-shadow: 0 0 10px cyan, 0 0 20px cyan;
         }
 
-        /* Glowing Buttons */
+        /* Controls Layout */
         .controls {
             display: grid;
             grid-template-columns: 70px 70px 70px;
-            gap: 15px;
+            gap: 10px;
             justify-content: center;
             align-items: center;
-            margin-top: 20px;
+            margin-top: 10px;
         }
 
         button {
-            width: 70px; height: 70px; font-size: 28px; font-weight: bold;
+            width: 60px; height: 60px; font-size: 24px; font-weight: bold;
             color: cyan; background: #111; border: 2px solid cyan;
-            border-radius: 15px; display: flex; align-items: center; justify-content: center;
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 0 10px cyan, 0 0 20px cyan;
             transition: all 0.2s ease-in-out;
         }
@@ -54,10 +64,6 @@
             transform: scale(1.1);
         }
 
-        button:active {
-            background: #00ffff; box-shadow: 0 0 30px cyan;
-        }
-
         /* Positioning Buttons */
         .up { grid-column: 2; grid-row: 1; }
         .left { grid-column: 1; grid-row: 2; }
@@ -65,10 +71,10 @@
         .down { grid-column: 2; grid-row: 3; }
 
         /* Reset Button */
-        .reset-container { margin-top: 30px; }
+        .reset-container { margin-top: 15px; }
         .reset-btn {
-            width: 160px; height: 50px; font-size: 20px;
-            background: crimson; color: white; border: none; border-radius: 10px;
+            width: 140px; height: 40px; font-size: 18px;
+            background: crimson; color: white; border: none; border-radius: 8px;
             font-weight: bold; transition: all 0.3s ease-in-out;
             box-shadow: 0 0 10px crimson, 0 0 20px crimson;
         }
@@ -82,7 +88,10 @@
 <body>
     <h1>Infinite Maze - Level <span id="levelDisplay">1</span></h1>
     <p class="timer">⏳ Time Left: <span id="timer">60</span> sec</p>
-    <canvas id="mazeCanvas"></canvas>
+    
+    <div class="canvas-container">
+        <canvas id="mazeCanvas" width="450" height="450"></canvas>
+    </div>
 
     <div class="controls">
         <button class="up" onclick="movePlayer(0, -1)">🔼</button>
@@ -92,7 +101,7 @@
     </div>
 
     <div class="reset-container">
-        <button class="reset-btn" onclick="resetGame()">🔄 Reset Level</button>
+        <button class="reset-btn" onclick="resetGame()">🔄 Reset</button>
     </div>
 
     <script>
@@ -101,8 +110,8 @@
 
         const size = 15;
         const cellSize = 30;
-        canvas.width = size * cellSize;
-        canvas.height = size * cellSize;
+        canvas.width = 450;
+        canvas.height = 450;
 
         let player = { x: 1, y: 1 };
         let goal = { x: size - 2, y: size - 2 };
@@ -164,7 +173,7 @@
             let newX = player.x + dx;
             let newY = player.y + dy;
 
-            if (newX > 0 && newX < size - 1 && newY > 0 && newY < size - 1 && !isCollision(newX, newY)) {
+            if (!isCollision(newX, newY)) {
                 player.x = newX;
                 player.y = newY;
             }
@@ -188,8 +197,6 @@
             generateMaze();
             player.x = 1;
             player.y = 1;
-            goal.x = size - 2;
-            goal.y = size - 2;
             timeLeft = 60;
             document.getElementById("timer").textContent = timeLeft;
             drawMaze();
